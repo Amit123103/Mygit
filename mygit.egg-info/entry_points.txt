@@ -1,0 +1,2 @@
+[console_scripts]
+mygit = mygit_cli.main:app

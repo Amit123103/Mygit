@@ -1,0 +1,3 @@
+"""
+MyGit CLI Application
+"""

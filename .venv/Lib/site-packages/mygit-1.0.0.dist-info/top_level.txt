@@ -1,0 +1,7 @@
+mygit_cli
+mygit_core
+mygit_protocol
+mygit_providers
+mygit_sdk
+mygit_security
+mygit_server

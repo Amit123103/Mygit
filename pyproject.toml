@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mygit"
+version = "1.0.0"
+description = "An independent, production-grade version-control ecosystem built from scratch."
+readme = "README.md"
+authors = [{ name = "MyGit Team" }]
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+    "cryptography>=41.0.0",
+    "httpx>=0.24.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.22.0",
+    "sqlmodel>=0.0.14",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "pytest>=7.0.0"
+]
+
+[project.scripts]
+mygit = "mygit_cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["packages/core", "packages/protocol", "packages/providers", "packages/security", "packages/sdk", "apps/cli", "apps/server"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+pythonpath = [
+    "packages/core",
+    "packages/protocol",
+    "packages/providers",
+    "packages/security",
+    "packages/sdk",
+    "apps/cli",
+    "apps/server"
+]
+
+[tool.pyright]
+extraPaths = [
+    "packages/core",
+    "packages/protocol",
+    "packages/providers",
+    "packages/security",
+    "packages/sdk",
+    "apps/cli",
+    "apps/server"
+]
