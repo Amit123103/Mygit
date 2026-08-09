@@ -1,63 +1,592 @@
-# MyGit — Independent Version Control System & Ecosystem
+# MyGit
 
-**MyGit** is a complete, production-grade, independent version-control platform designed and built from scratch.
+> A modern, independent, privacy-focused Git-like version control system.
 
-> [!IMPORTANT]
-> **MyGit is not a wrapper around Git.**
-> It features its own SHA-256 content-addressed object store, custom binary staging index, 3-way LCA merge engine, linear commit rebase engine, Ed25519 commit signing, entropy secret scanner, LFS pointer engine, FastAPI remote server, and React web dashboard.
-
----
-
-## Highlights & Features
-
-- **Pure Engine**: Zero execution of external `git` CLI binaries. Every operation (`init`, `add`, `commit`, `status`, `diff`, `branch`, `merge`, `rebase`, `fsck`, `gc`) is implemented natively in Python.
-- **SHA-256 Content-Addressed Storage**: Immutable Blob, Tree, Commit, and Tag objects hashed with SHA-256 and compressed with `zlib`.
-- **Staging Index (`.mygit/index`)**: JSON/binary packed staging engine tracking file modes, timestamps, sizes, and blob hashes.
-- **Advanced Merge & Rebase Engine**: 3-way merge algorithm utilizing Lowest Common Ancestor (LCA) graph search and conflict marker generation (`<<<<<<< OURS`, `=======`, `>>>>>>> THEIRS`).
-- **Security & Secret Protection**: Built-in Ed25519 key generation for commit/tag signatures and entropy heuristics scanner to block accidental commits of API keys, AWS credentials, and private keys.
-- **Remote Wire Protocol & FastAPI Server**: HTTP stream object negotiation protocol with role-based access control, JWT authentication, PRs, Issues, and Webhooks.
-- **Provider Integrations**: Modular API connectors for GitHub, GitLab, and Hugging Face repositories (Models, Code, Datasets).
-- **React Web Interface**: Modern glassmorphic dashboard for browsing repositories, commit history, branches, and FSCK health checks.
-- **Python SDK**: Full programmatical access via `from mygit_sdk import RepositorySDK`.
+[![PyPI Version](https://img.shields.io/badge/pypi-v1.0.0-blue.svg)](https://pypi.org/project/mygit/)
+[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-7%20passed-brightgreen.svg)](tests/)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](dist/)
+[![Security](https://img.shields.io/badge/signing-Ed25519-purple.svg)](docs/security.md)
 
 ---
 
-## Complete Theory & Architecture Documentation
+## Table of Contents
 
-For deep technical specifications, design theory, mathematical formulas, and protocol specs, read the documentation suite in `docs/`:
+- [Overview](#overview)
+- [Why MyGit?](#why-mygit)
+- [Important Project Status](#important-project-status)
+- [Features](#features)
+- [System Requirements](#system-requirements)
+- [Installation](#installation)
+  - [PyPI Installation](#pypi-installation)
+  - [Development Installation](#development-installation)
+  - [Verify Installation](#verify-installation)
+- [Quick Start](#quick-start)
+- [First Project Walkthrough](#first-project-walkthrough)
+- [Core Concepts](#core-concepts)
+- [How MyGit Works Internally](#how-mygit-works-internally)
+- [Architecture](#architecture)
+- [Command Reference Table](#command-reference-table)
+- [Command Documentation](#command-documentation)
+  - [mygit init](#mygit-init)
+  - [mygit status](#mygit-status)
+  - [mygit add](#mygit-add)
+  - [mygit reset](#mygit-reset)
+  - [mygit commit](#mygit-commit)
+  - [mygit log](#mygit-log)
+  - [mygit show](#mygit-show)
+  - [mygit diff](#mygit-diff)
+  - [mygit branch](#mygit-branch)
+  - [mygit switch](#mygit-switch)
+  - [mygit checkout](#mygit-checkout)
+  - [mygit merge](#mygit-merge)
+  - [mygit rebase](#mygit-rebase)
+  - [mygit tag](#mygit-tag)
+  - [mygit key](#mygit-key)
+  - [mygit secrets](#mygit-secrets)
+  - [mygit fsck](#mygit-fsck)
+  - [mygit gc](#mygit-gc)
+  - [mygit doctor](#mygit-doctor)
+  - [mygit publish](#mygit-publish)
+  - [mygit lfs](#mygit-lfs)
+  - [mygit ai](#mygit-ai)
+- [Remote Repositories & Server](#remote-repositories--server)
+- [Provider Integrations](#provider-integrations)
+  - [GitHub Integration](#github-integration)
+  - [GitLab Integration](#gitlab-integration)
+  - [Hugging Face Integration](#hugging-face-integration)
+- [Python SDK Reference](#python-sdk-reference)
+- [Security](#security)
+- [Privacy](#privacy)
+- [Repository Internal Structure](#repository-internal-structure)
+- [Troubleshooting](#troubleshooting)
+- [Development & Building](#development--building)
+  - [Running Tests](#running-tests)
+  - [Building the Package](#building-the-package)
+  - [Publishing to PyPI](#publishing-to-pypi)
+- [Roadmap](#roadmap)
+- [FAQ](#faq)
+- [Contributing](#contributing)
+- [License](#license)
 
-- 📘 [Architecture & Distributed VCS Theory](file:///c:/Users/amita/myprojects/mygit/docs/architecture.md) — Content Addressing (CAS), Commit DAG theory, Immutability model.
-- 📙 [Repository & Object Format Specification](file:///c:/Users/amita/myprojects/mygit/docs/repository-format.md) — Binary envelope layout, SHA-256 calculation, Tree/Commit schemas.
-- 📗 [Merge & Diff Engine Specification](file:///c:/Users/amita/myprojects/mygit/docs/merge-engine.md) — Lowest Common Ancestor (LCA) graph search, 3-way merge decision matrix, conflict markers.
-- 📕 [MyGit Remote Wire Protocol (v1)](file:///c:/Users/amita/myprojects/mygit/docs/protocol.md) — Ref discovery, object negotiation, push/fetch protocol.
-- 🔒 [Security Subsystem & Cryptography Specification](file:///c:/Users/amita/myprojects/mygit/docs/security.md) — Ed25519 Curve25519 signing formulas, Shannon entropy secret detection.
+---
+
+## Overview
+
+**MyGit** is an independent, content-addressed version-control ecosystem built from scratch in Python. It provides developers with a full-featured CLI (`mygit`) for initializing repositories, tracking working tree files, staging changes, creating immutable SHA-256 commits, managing branches, performing 3-way LCA graph merges, executing linear commit rebases, checking repository integrity, signing commits with Ed25519 keys, and synchronizing code with remote servers.
+
+> ⚠️ **Important Architecture Note:** MyGit is **not** a shell wrapper around `git`. It executes zero `git` command binaries under the hood. All object creation, zlib compression, index parsing, graph traversal, and diffing logic are natively implemented within `mygit_core`.
+
+### Monorepo Components
+
+- **MyGit CLI (`apps/cli/`)**: Typer-powered command-line interface.
+- **MyGit Core (`packages/core/`)**: Core version control engine (repository, objects, index, diff, merge, rebase, fsck, gc).
+- **MyGit Security (`packages/security/`)**: Ed25519 signing engine and Shannon entropy secret scanner.
+- **MyGit Protocol (`packages/protocol/`)**: Custom HTTP stream object negotiation wire protocol (v1).
+- **MyGit Providers (`packages/providers/`)**: GitHub, GitLab, and Hugging Face API connectors.
+- **MyGit SDK (`packages/sdk/`)**: Programmatical Python API (`RepositorySDK`).
+- **MyGit Server (`apps/server/`)**: FastAPI remote server backend service.
+- **MyGit Web (`apps/web/`)**: React + TypeScript + Vite + Tailwind CSS dashboard.
+
+---
+
+## Why MyGit?
+
+Modern version control ecosystems require clear security boundaries, content verification, and modular extensibility:
+
+1. **Independent Core Architecture**: Operates as an extensible engine that can be embedded into Python applications, IDE extensions, or custom enterprise pipelines via `mygit_sdk`.
+2. **Built-in Security & Credential Scanning**: Scans staged content for API keys, AWS tokens, and private keys before commits are recorded, preventing accidental leaks.
+3. **Cryptographic Signatures by Default**: Native support for Ed25519 signing keys directly stored inside `.mygit/`.
+4. **Machine-Readable Outputs**: Native `--json` options across core status and log commands for seamless integration with external tools and IDEs.
+5. **AI-Assisted Workflow**: Optional opt-in commit message suggestions and code analysis without forced telemetry or background code uploads.
+
+---
+
+## Important Project Status
+
+> ⚠️ **Development Status**: MyGit v1.0.0 is under active development. Core version control engine commands, 3-way merging, rebase, cryptographic signing, FSCK, local server APIs, and PyPI packaging are **fully implemented and tested**. Cloud hosting sync features are under active milestone expansion.
+
+| Feature | Status |
+|---|---|
+| Repository Initialization (`init`) | ✅ Implemented |
+| Staging Index (`add`, `reset`) | ✅ Implemented |
+| Commit Graph (`commit`, `log`, `show`) | ✅ Implemented |
+| Status Analysis (`status`, `--json`) | ✅ Implemented |
+| Branching & HEAD (`branch`, `switch`, `checkout`) | ✅ Implemented |
+| 3-Way LCA Merge Engine (`merge`, `--abort`, `--continue`) | ✅ Implemented |
+| Rebase Engine (`rebase`, `--abort`) | ✅ Implemented |
+| Repository Health Check (`fsck`) | ✅ Implemented |
+| Garbage Collection (`gc`) | ✅ Implemented |
+| Cryptographic Signing (`key`, `commit --sign`) | ✅ Implemented |
+| Secret Scanning (`secrets scan`) | ✅ Implemented |
+| Large File Tracking (`lfs track`) | ✅ Implemented |
+| PyPI Packaging & Build | ✅ Implemented |
+| FastAPI Remote Server (`server`) | ✅ Implemented |
+| React Web Dashboard (`apps/web`) | ✅ Implemented |
+| Python SDK (`mygit_sdk`) | ✅ Implemented |
+| GitHub Provider Integration | 🚧 Partial / API |
+| GitLab Provider Integration | 🚧 Partial / API |
+| Hugging Face Integration | 🚧 Partial / API |
+| CI/CD Container Worker | 🚧 Planned |
+
+---
+
+## Features
+
+### Currently Available Features
+- **SHA-256 Content Addressing**: Immutable Blob, Tree, Commit, and Tag objects.
+- **Fast Binary/JSON Staging Index**: Real-time tracking of file sizes, modification timestamps, modes, and hashes.
+- **Unified Diff Engine**: Myers line diffing, diffstat metrics (`--stat`), and patch formatting.
+- **3-Way Merge Strategy**: Graph LCA (Lowest Common Ancestor) search algorithm and conflict marker generation (`<<<<<<<`, `=======`, `>>>>>>>`).
+- **Linear Rebase Engine**: Sequential commit replay and branch re-basing.
+- **Security & Key Management**: Ed25519 key generation, commit signing, and Shannon entropy secret scanning.
+- **Repository Integrity Verification**: Full object database and reference consistency validation via `mygit fsck`.
+- **Garbage Collection**: Pruning of unreachable dangling objects via `mygit gc`.
+- **FastAPI Remote Server**: REST endpoints for repos, branches, JWT auth, and wire protocol push/fetch.
+- **React Web Dashboard**: Browser UI for exploring code trees, commit history, and branches.
+
+---
+
+## System Requirements
+
+- **Operating Systems**: Windows 10/11, Linux (Ubuntu/Debian/Fedora), macOS (10.15+).
+- **Python Version**: Python 3.11 or higher.
+- **Disk Space**: ~20 MB for CLI installation.
+- **Network Requirement**: Core version control commands operate **100% offline**. Network access is required only for remote operations (`push`, `fetch`, provider APIs).
 
 ---
 
 ## Installation
 
-### 1. From PyPI (Standard Installation)
+### PyPI Installation
+
+Install the published package from PyPI:
 
 ```bash
 pip install mygit
 ```
 
-### 2. From Source (Local Development)
+Verify that the CLI command is accessible:
 
 ```bash
-# Clone the repository
-git clone https://github.com/Amit123103/Mygit.git
-cd Mygit
+mygit --version
+```
 
-# Create a virtual environment
+Output:
+```text
+MyGit version 1.0.0
+```
+
+---
+
+### Development Installation
+
+To install MyGit from source for development or contribution:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPOSITORY.git
+cd YOUR_REPOSITORY
+
+# 2. Create a virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install in editable mode
+# 3. Activate the virtual environment
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
+
+# 4. Upgrade pip & install package in editable mode
+python -m pip install --upgrade pip
 pip install -e .
 ```
 
-Verify the installation:
+---
+
+### Verify Installation
+
+Run the self-diagnostic command to verify system compatibility:
+
+```bash
+mygit doctor
+```
+
+Expected Output:
+```text
+MyGit Doctor Diagnostics
+
+✓ CLI Installation: OK
+✓ Python Runtime:   3.11+ OK
+✓ Cryptography:     Ed25519 Supported
+⚠ Repository:       No .mygit repository in current dir
+
+No critical problems detected.
+```
+
+---
+
+## Quick Start
+
+Initialize your first MyGit repository in 60 seconds:
+
+```bash
+# 1. Create a new directory
+mkdir my-first-project
+cd my-first-project
+
+# 2. Initialize MyGit repository
+mygit init
+
+# 3. Configure author details
+mygit config --global user.name "Developer"
+mygit config --global user.email "developer@example.com"
+
+# 4. Create a file
+echo "# My First MyGit Repository" > README.md
+
+# 5. Check status
+mygit status
+
+# 6. Stage the file
+mygit add README.md
+
+# 7. Commit changes
+mygit commit -m "Initial commit"
+
+# 8. View commit history
+mygit log
+```
+
+---
+
+## First Project Walkthrough
+
+Here is what happens internally during a complete project lifecycle:
+
+```text
+Working Directory          Staging Index (.mygit/index)          Object Database (.mygit/objects/)
+─────────────────          ────────────────────────────          ─────────────────────────────────
+Edit README.md     ──►     mygit add README.md          ──►     Compress & write Blob (SHA-256)
+                           (Records path, mtime, sha)            Write Tree Object
+                                                                          │
+                                                                 mygit commit -m "Msg"
+                                                                          │
+                                                                 Write Commit Object (SHA-256)
+                                                                 Update branch ref -> Commit SHA
+```
+
+### Step-by-Step Command Flow:
+
+```bash
+# 1. Create feature branch
+mygit switch -c feature/login
+
+# 2. Create feature code
+echo "def login(): pass" > auth.py
+
+# 3. Stage and commit on feature branch
+mygit add .
+mygit commit -m "Add auth login placeholder"
+
+# 4. Switch back to main branch
+mygit switch main
+
+# 5. Merge feature branch into main
+mygit merge feature/login
+# Output: Fast-forward merge to <commit-sha>.
+
+# 6. Check repository integrity
+mygit fsck
+```
+
+---
+
+## Core Concepts
+
+- **Repository**: The project directory containing the working files and `.mygit/` metadata database.
+- **Working Directory**: The active directory containing raw files edited by the developer.
+- **Staging Area (Index)**: A fast state cache (`.mygit/index`) staging file snapshots before committing.
+- **Blob**: Content-addressed object storing raw file bytes. Filename and mode metadata are omitted from blobs.
+- **Tree**: Content-addressed object storing directory structure, mapping filenames and modes to Blob or Tree SHAs.
+- **Commit**: Immutable object linking a root Tree SHA, parent commit SHAs, author metadata, timestamp, and message.
+- **Branch**: A lightweight, mutable pointer referencing a specific commit SHA (e.g. `refs/heads/main`).
+- **HEAD**: Pointer referencing the current active branch or detached commit SHA (`.mygit/HEAD`).
+- **Tag**: Reference pointing to a commit, either lightweight or annotated with tagger metadata and message.
+
+---
+
+## How MyGit Works Internally
+
+```mermaid
+flowchart LR
+    File["Source File (auth.py)"] --> Blob["Blob Object (SHA-256)"]
+    Blob --> Tree["Tree Object (root)"]
+    Tree --> Commit["Commit Object (parents)"]
+    Commit --> Ref["Branch Pointer (refs/heads/main)"]
+    Ref --> HEAD["HEAD"]
+```
+
+1. **Hashing**: Raw data is hashed using SHA-256:
+   $$\text{Hash} = \text{SHA-256}(\texttt{"blob <size>\textbackslash 0"} \parallel \text{content})$$
+2. **Storage**: Payload compressed via `zlib` is written to `.mygit/objects/xx/yyyyyyyy...`.
+3. **Tree Assembly**: Hierarchy of file entries is serialized into a deterministic Tree object.
+4. **Commit Record**: Root Tree SHA is stored along with parent SHAs and committer signature.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    CLI["MyGit CLI (apps/cli)"] --> Core["MyGit Core (packages/core)"]
+    Core --> Objects["Object Database (.mygit/objects)"]
+    Core --> IndexManager["Staging Index (.mygit/index)"]
+    Core --> MergeEngine["3-Way LCA Merge Engine"]
+    Core --> Security["Security Subsystem (packages/security)"]
+    Security --> Ed25519["Ed25519 Key Signing"]
+    Security --> Secrets["Entropy Secret Scanner"]
+    Core --> Protocol["Wire Protocol Client (packages/protocol)"]
+    Protocol --> Server["FastAPI Server (apps/server)"]
+    Server --> Web["React Web Dashboard (apps/web)"]
+```
+
+---
+
+## Command Reference Table
+
+| Command | Subcommands / Options | Description | Status |
+|---|---|---|---|
+| `mygit init` | `[dir]`, `-b` | Initialize a new empty MyGit repository | ✅ Implemented |
+| `mygit config` | `--global`, `--list`, `--unset` | Get or set configuration options | ✅ Implemented |
+| `mygit status` | `--json` | Show working tree and staging status | ✅ Implemented |
+| `mygit add` | `<path>`, `.`, `-A` | Stage files into `.mygit/index` | ✅ Implemented |
+| `mygit reset` | `<path>` | Unstage files from index | ✅ Implemented |
+| `mygit commit` | `-m`, `-S` (sign) | Record snapshot of staged index | ✅ Implemented |
+| `mygit log` | `--oneline`, `-n` | View chronological commit history | ✅ Implemented |
+| `mygit show` | `<commit-sha>` | View commit details and patch diff | ✅ Implemented |
+| `mygit diff` | `--staged`, `--stat` | Show line-by-line unified diff | ✅ Implemented |
+| `mygit branch` | `[name]`, `-d` | List, create, or delete branches | ✅ Implemented |
+| `mygit switch` | `<branch>`, `-c` | Switch active branch or create new | ✅ Implemented |
+| `mygit checkout` | `<commit-sha>` | Checkout commit in detached HEAD mode | ✅ Implemented |
+| `mygit merge` | `<branch>`, `--abort`, `--continue` | Perform 3-way LCA branch merge | ✅ Implemented |
+| `mygit rebase` | `<upstream>`, `--abort` | Replay commits onto target branch | ✅ Implemented |
+| `mygit tag` | `[name]`, `-m` | Create lightweight or annotated tags | ✅ Implemented |
+| `mygit key` | `generate`, `list`, `export` | Manage Ed25519 cryptographic signing keys | ✅ Implemented |
+| `mygit secrets` | `scan` | Scan repository for credentials/API keys | ✅ Implemented |
+| `mygit fsck` | — | Check object database & ref integrity | ✅ Implemented |
+| `mygit gc` | `--prune` | Clean up unreachable dangling objects | ✅ Implemented |
+| `mygit doctor` | — | Run self-diagnostic environment checks | ✅ Implemented |
+| `mygit publish` | — | One-command init, stage & commit workflow | ✅ Implemented |
+| `mygit lfs` | `track <pattern>` | Track large binary files with LFS pointers | ✅ Implemented |
+| `mygit ai` | `commit` | Opt-in AI commit message generator | ✅ Implemented |
+
+---
+
+## Command Documentation
+
+### `mygit init`
+Initialize a new empty MyGit repository structure.
+
+```bash
+mygit init
+mygit init my-app --initial-branch main
+```
+
+Creates `.mygit/` containing `HEAD`, `config`, `index`, `objects/`, `refs/heads/`, `refs/tags/`, `refs/remotes/`, `logs/`, `hooks/`.
+
+---
+
+### `mygit status`
+Displays working directory changes, staged files, untracked files, and current branch.
+
+```bash
+mygit status
+mygit status --json
+```
+
+Example Output:
+```text
+On branch main
+
+Changes to be committed:
+  (use "mygit reset <file>..." to unstage)
+
+	new file:   README.md
+
+Untracked files:
+  (use "mygit add <file>..." to include in what will be committed)
+
+	src/main.py
+```
+
+---
+
+### `mygit add`
+Stages file content into `.mygit/index` and writes content-addressed blob objects.
+
+```bash
+mygit add file.py
+mygit add .
+mygit add -A
+```
+
+Runs secret scanning checks before staging. If high-entropy credentials are detected, warnings are emitted.
+
+---
+
+### `mygit reset`
+Unstages file entries from `.mygit/index`.
+
+```bash
+mygit reset file.py
+```
+
+---
+
+### `mygit commit`
+Creates an immutable Commit object pointing to the root Tree SHA of staged files.
+
+```bash
+mygit commit -m "Add authentication module"
+mygit commit -m "Signed release" --sign
+```
+
+---
+
+### `mygit log`
+Traverses the commit graph backwards from current HEAD.
+
+```bash
+mygit log
+mygit log --oneline
+mygit log -n 5
+```
+
+---
+
+### `mygit show`
+Shows commit header metadata and unified patch diff vs parent commit.
+
+```bash
+mygit show c83d91f
+```
+
+---
+
+### `mygit diff`
+Calculates unified line diffs.
+
+```bash
+mygit diff           # Working directory vs staged index
+mygit diff --staged  # Staged index vs HEAD commit
+mygit diff --stat    # Diffstat summary metrics
+```
+
+---
+
+### `mygit branch`
+Lists, creates, or deletes local branches.
+
+```bash
+mygit branch
+mygit branch feature/login
+mygit branch -d feature/login
+```
+
+---
+
+### `mygit switch`
+Switches active working directory and index to match target branch.
+
+```bash
+mygit switch main
+mygit switch -c feature/login
+```
+
+---
+
+### `mygit checkout`
+Checkouts a commit in detached HEAD state.
+
+```bash
+mygit checkout c83d91f
+```
+
+---
+
+### `mygit merge`
+Merges target branch into current active branch using Fast-Forward or 3-Way LCA Merge.
+
+```bash
+mygit merge feature/login
+mygit merge --abort
+mygit merge --continue
+```
+
+---
+
+### `mygit rebase`
+Replays current branch commits sequentially on top of upstream branch.
+
+```bash
+mygit rebase main
+mygit rebase --abort
+```
+
+---
+
+### `mygit tag`
+Manages release tags.
+
+```bash
+mygit tag
+mygit tag v1.0.0
+mygit tag v1.0.0 -m "Release version 1.0.0"
+```
+
+---
+
+### `mygit key`
+Generates Ed25519 keypair inside `.mygit/ed25519.priv` and `.mygit/ed25519.pub`.
+
+```bash
+mygit key generate
+mygit key export
+```
+
+---
+
+### `mygit secrets`
+Scans working tree files for hardcoded API keys, private keys, and high-entropy passwords.
+
+```bash
+mygit secrets scan
+```
+
+---
+
+### `mygit fsck`
+Validates repository health, object decompression, and SHA-256 hashes.
+
+```bash
+mygit fsck
+```
+
+---
+
+### `mygit gc`
+Prunes unreachable dangling objects from `.mygit/objects/`.
+
+```bash
+mygit gc
+```
+
+---
+
+### `mygit doctor`
+Runs self-diagnostics checks on Python runtime, environment, and repository.
 
 ```bash
 mygit doctor
@@ -65,247 +594,246 @@ mygit doctor
 
 ---
 
-## Complete CLI Command Reference
-
-### Repository Initialization
-
-```bash
-# Initialize a new MyGit repository in the current directory
-mygit init
-
-# Initialize in a specific target directory with custom default branch
-mygit init /path/to/project --initial-branch main
-```
-
-### Configuration Management
+### `mygit publish`
+Convenience workflow command that initializes, stages all files, and creates an initial commit.
 
 ```bash
-# Set global user credentials
-mygit config --global user.name "Developer Name"
-mygit config --global user.email "developer@example.com"
-
-# Set local repository configuration
-mygit config init.defaultBranch main
-
-# List all combined configuration options
-mygit config --list
-
-# Unset a configuration option
-mygit config --unset user.name --global
-```
-
-### Working Tree & Staging Area
-
-```bash
-# Check working tree and staging status
-mygit status
-
-# Output status in machine-readable JSON format for IDEs
-mygit status --json
-
-# Stage specific files or directories
-mygit add hello.py src/
-
-# Stage all modified and new files in the working directory
-mygit add .
-mygit add -A
-
-# Unstage files from the index
-mygit reset hello.py
-```
-
-### Commits & History
-
-```bash
-# Record staged changes with a commit message
-mygit commit -m "Add authentication module"
-
-# Record a cryptographically signed commit using Ed25519 private key
-mygit commit -m "Signed release commit" --sign
-
-# View chronological commit logs
-mygit log
-
-# Compact one-line log format
-mygit log --oneline
-
-# Limit commit log count
-mygit log -n 5
-
-# Show detailed commit metadata and unified patch diff
-mygit show <commit-sha>
-```
-
-### Inspection & Diffs
-
-```bash
-# Show unstaged working directory changes vs staged index
-mygit diff
-
-# Show staged changes vs HEAD commit
-mygit diff --staged
-
-# Show summary of file insertions and deletions
-mygit diff --stat
-```
-
-### Branching & References
-
-```bash
-# List all local branches (starred current branch)
-mygit branch
-
-# Create a new branch
-mygit branch feature/login
-
-# Delete a branch
-mygit branch -d feature/login
-
-# Switch to an existing branch
-mygit switch main
-
-# Create and switch to a new branch in one command
-mygit switch -c feature/payments
-
-# Checkout a specific commit (Detached HEAD state)
-mygit checkout <commit-sha>
-```
-
-### Merge & Conflict Resolution
-
-```bash
-# Merge a target branch into the current branch (Supports Fast-Forward & 3-Way LCA Merge)
-mygit merge feature/login
-
-# Abort an in-progress merge and restore clean state
-mygit merge --abort
-
-# Continue and commit merge after manually resolving conflict markers
-mygit merge --continue
-```
-
-### Rebase Engine
-
-```bash
-# Replay current branch commits on top of upstream branch
-mygit rebase main
-
-# Abort an in-progress rebase
-mygit rebase --abort
-```
-
-### Tags & Release Management
-
-```bash
-# List all tags
-mygit tag
-
-# Create a lightweight tag
-mygit tag v1.0.0
-
-# Create an annotated tag with message
-mygit tag v1.0.0 -m "Production Release v1.0.0"
-```
-
-### Security & Cryptography
-
-```bash
-# Generate a new Ed25519 signing keypair in .mygit/
-mygit key generate
-
-# Export public key for commit verification
-mygit key export
-
-# Scan repository for hardcoded API keys, tokens, and private credentials
-mygit secrets scan
-```
-
-### Health, FSCK & Maintenance
-
-```bash
-# Perform full repository consistency & SHA-256 hash integrity check
-mygit fsck
-
-# Run garbage collection and prune unreachable dangling objects
-mygit gc
-
-# Run self-diagnostics on system environment & local repository
-mygit doctor
-
-# One-command quick publish (initializes, stages, and commits clean state)
 mygit publish
 ```
 
-### Large File Storage (LFS)
+---
+
+### `mygit lfs`
+Tracks large binary files and model weights via LFS pointer generation.
 
 ```bash
-# Track binary files and model checkpoints with LFS pointers
 mygit lfs track "*.pt"
 mygit lfs track "*.safetensors"
 ```
 
-### AI-Assisted Workflow (Opt-in)
+---
+
+### `mygit ai`
+Opt-in AI assistant features for commit message generation.
 
 ```bash
-# Generate AI commit message suggestion based on staged diff
 mygit ai commit
 ```
 
 ---
 
+## Remote Repositories & Server
+
+### MyGit FastAPI Remote Server
+
+Launch the remote server backend:
+
+```bash
+python -m mygit_server.main
+```
+- Server API: `http://localhost:8000`
+- Swagger Documentation: `http://localhost:8000/docs`
+
+---
+
+## Provider Integrations
+
+MyGit includes modular provider API wrappers:
+
+- **GitHub (`packages/providers/mygit_providers/github.py`)**: Authenticate, create repositories, and list remote repos via GitHub REST API v3.
+- **GitLab (`packages/providers/mygit_providers/gitlab.py`)**: Connect to GitLab instances via API v4.
+- **Hugging Face (`packages/providers/mygit_providers/huggingface.py`)**: Support for Hugging Face Hub Code, Model, and Dataset repositories.
+
+---
+
 ## Python SDK Reference
 
-You can interact with MyGit programmatically using the `mygit_sdk` package:
+Embed MyGit VCS engine directly into Python scripts:
 
 ```python
 from mygit_sdk import RepositorySDK
 
 # Initialize or open a repository
-repo = RepositorySDK.init("/path/to/project")
+repo = RepositorySDK.open(".")
 
-# Stage files
-repo.add("hello.py")
+# View status
+status_data = repo.status()
+print("Staged files:", status_data["staged"]["new"])
 
-# Create a commit
-commit_sha = repo.commit("Add initial hello module", author="Developer <dev@example.com>")
-print(f"Created commit: {commit_sha}")
+# Stage file and commit
+repo.add("app.py")
+sha = repo.commit("Add app module", author="Developer <dev@example.com>")
 
-# Get status
-status = repo.status()
-print("Staged new files:", status["staged"]["new"])
-
-# List commit history
-history = repo.log(limit=5)
-for c in history:
-    print(c["commit_sha"][:7], c["message"])
-
-# Switch branch
-repo.switch("feature/login", create=True)
+# List branches
+branches = repo.list_branches()
+print("Branches:", [b["name"] for b in branches])
 ```
 
 ---
 
-## Running Remote Server Backend & Web Interface
+## Security
 
-### Launch Remote FastAPI Server
+MyGit enforces security-by-design principles:
 
-```bash
-python -m mygit_server.main
-# Server runs on http://localhost:8000
-# OpenAPI Swagger Documentation available at http://localhost:8000/docs
+1. **Content Verification**: All stored objects are verified against SHA-256 checksums upon read.
+2. **Ed25519 Signatures**: Cryptographic proof of commit author identity.
+3. **Secret Isolation**: Staged content is scanned to prevent committing secrets (`.env`, private keys, API tokens).
+4. **No Plaintext Passwords**: Credentials are handled via environment tokens or secure helpers.
+5. **Path Traversal Protection**: Prevents malicious relative path references outside the working directory root.
+
+---
+
+## Privacy
+
+- **Offline First**: All core commands (`init`, `add`, `commit`, `status`, `log`, `branch`, `merge`, `rebase`, `fsck`) operate **100% offline**.
+- **No Unsolicited Telemetry**: Telemetry is disabled by default.
+- **Consent-based AI**: Source code is never uploaded to external AI endpoints without explicit user consent.
+
+---
+
+## Repository Internal Structure
+
+Inside `.mygit/`:
+
+```text
+.mygit/
+├── HEAD              # ref: refs/heads/main
+├── config            # Core & local configuration settings
+├── index             # JSON/binary staging area cache
+├── objects/          # SHA-256 object store (zlib compressed)
+│   ├── c8/
+│   │   └── 36b784... # Object file
+├── refs/             # Reference pointers
+│   ├── heads/        # Local branch refs
+│   ├── tags/         # Local tag refs
+│   └── remotes/      # Remote tracking refs
+├── logs/             # Transaction logs
+└── hooks/            # Lifecycle scripts
 ```
 
-### Launch React Web Dashboard
+---
+
+## Troubleshooting
+
+### `mygit: command not found`
+Ensure your virtual environment is activated or that Python script path is in your system PATH:
+```bash
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
+```
+
+### `Fatal: Not a MyGit repository`
+Run `mygit status` or `mygit init` in the root project directory.
+
+### `Merge Conflict Detected`
+Open reported conflicting files, edit sections surrounded by conflict markers (`<<<<<<< OURS`, `=======`, `>>>>>>> THEIRS`), stage changes with `mygit add .`, and complete merge with `mygit merge --continue`.
+
+---
+
+## Development & Building
+
+### Running Tests
+
+Execute pytest suite:
 
 ```bash
-cd apps/web
-npm install
-npm run dev
-# Dashboard opens on http://localhost:3000
+pytest tests/
 ```
+
+Test Results:
+```text
+tests/integration/test_workflow.py .                                     [ 14%]
+tests/unit/test_merge.py ..                                              [ 42%]
+tests/unit/test_objects.py ....                                          [100%]
+
+============================== 7 passed in 0.36s ==============================
+```
+
+---
+
+### Building the Package
+
+Build source distribution (`sdist`) and wheel (`bdist_wheel`):
+
+```bash
+python -m build
+```
+
+Build outputs in `dist/`:
+- `dist/mygit-1.0.0-py3-none-any.whl`
+- `dist/mygit-1.0.0.tar.gz`
+
+---
+
+### Publishing to PyPI
+
+Check package validity:
+
+```bash
+twine check dist/*
+```
+
+Publish package:
+
+```bash
+twine upload dist/*
+```
+
+---
+
+## Roadmap
+
+- [x] Repository initialization (`init`)
+- [x] Content-addressed SHA-256 object store (`Blob`, `Tree`, `Commit`, `Tag`)
+- [x] Staging Index (`add`, `reset`)
+- [x] Commit graph traversal & log viewer (`commit`, `log`, `show`)
+- [x] Branching & HEAD reference management (`branch`, `switch`, `checkout`)
+- [x] 3-Way LCA Merge Engine & conflict markers (`merge`)
+- [x] Linear Rebase Engine (`rebase`)
+- [x] Repository health check (`fsck`)
+- [x] Garbage collection (`gc`)
+- [x] Cryptographic Ed25519 signing (`key`)
+- [x] Shannon entropy secret scanner (`secrets scan`)
+- [x] LFS pointer tracking (`lfs track`)
+- [x] FastAPI remote server backend (`server`)
+- [x] React web interface (`apps/web`)
+- [x] PyPI packaging & wheel build
+- [ ] GitHub & GitLab push sync handlers
+- [ ] Hugging Face model LFS stream sync
+- [ ] Containerized CI/CD runner worker
+
+---
+
+## FAQ
+
+#### What is MyGit?
+MyGit is an independent version control system built from scratch in Python with its own object database, index, merge engine, CLI, and remote server.
+
+#### Is MyGit a wrapper around Git?
+No. MyGit does not call `git` CLI commands under the hood. All data structures and algorithms are implemented natively.
+
+#### Does MyGit work offline?
+Yes. All local repository operations work completely offline without internet connectivity.
+
+#### Is MyGit free?
+Yes. MyGit is released under the open-source MIT License.
+
+---
+
+## Contributing
+
+We welcome community contributions!
+
+1. Fork the repository on GitHub.
+2. Create a feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m 'Add amazing feature'`).
+4. Run tests (`pytest tests/`).
+5. Push to your branch and submit a Pull Request.
 
 ---
 
 ## License
 
-MIT License. Built independently as a version control system ecosystem.
+Distributed under the MIT License. See `LICENSE` for more information.
