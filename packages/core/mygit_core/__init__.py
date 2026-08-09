@@ -2,4 +2,4 @@
 MyGit Core - Pure Version Control Engine
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"

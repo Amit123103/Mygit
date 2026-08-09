@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mygit"
-version = "1.0.0"
+version = "1.0.1"
 description = "An independent, production-grade version-control ecosystem built from scratch."
 readme = "README.md"
 authors = [{ name = "MyGit Team" }]
