@@ -2,23 +2,7 @@
 
 ## 1. On-Disk Directory Layout
 
-When `mygit init` is executed, MyGit creates a `.mygit` hidden directory containing:
-
-```text
-.mygit/
-├── HEAD              # Pointer to current active branch (ref: refs/heads/main) or commit hash
-├── config            # Local repository configuration settings
-├── index             # Binary/JSON staging area index
-├── objects/          # Content-addressed object database
-│   ├── 5f/           # First 2 hex characters of SHA-256
-│   │   └── 91ac...   # Remaining 62 hex characters
-├── refs/             # Reference pointers
-│   ├── heads/        # Local branch pointers (e.g. main -> commit SHA)
-│   ├── tags/         # Tag pointers (v1.0.0 -> commit or tag object SHA)
-│   └── remotes/      # Remote branch tracking pointers
-├── logs/             # Reference update transaction logs
-└── hooks/            # Client-side lifecycle hooks
-```
+When `mygit init` is executed, MyGit creates a `.mygit` hidden directory containing `HEAD`, `config`, `index`, `objects/`, `refs/`, `logs/`, and `hooks/`.
 
 ---
 

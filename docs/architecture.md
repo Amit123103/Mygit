@@ -50,19 +50,6 @@ Version history in MyGit is modeled as a **Directed Acyclic Graph (DAG)** of imm
 
 ## 3. Storage Hierarchy
 
-```text
-Working Directory (Editable files on disk)
-       │
-       ▼  mygit add
- Staging Area Index (.mygit/index - Metadata & Hash map)
-       │
-       ▼  mygit commit
- Object Database (.mygit/objects/ - Compressed Blobs, Trees, Commits)
-       │
-       ▼  mygit push
- Remote Server (.mygit wire protocol over HTTP/HTTPS)
-```
-
 1. **Working Tree**: The physical directory containing files actively edited by the developer.
 2. **Index (Staging Area)**: A fast binary/JSON state cache recording file paths, modification times (`mtime`), sizes, and staged blob SHA-256 hashes.
 3. **Object Store**: The persistent append-only database storing zlib-compressed objects under `.mygit/objects/xx/yyyy...`.
