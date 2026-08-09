@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# Mygit
-=======
 # MyGit — Independent Version Control System
 
 **MyGit** is a complete, modern version-control ecosystem built from scratch.
@@ -57,4 +54,3 @@ mygit/
 │   └── sdk/            # Python SDK wrapper
 └── tests/              # Unit, integration, security, and E2E test suite
 ```
->>>>>>> 5f7eb9b (Initial commit)
