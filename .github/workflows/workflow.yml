@@ -2,6 +2,8 @@ name: Publish MyGit to PyPI
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   release:
@@ -47,8 +49,8 @@ jobs:
           twine check dist/*
 
       - name: Publish Package to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          twine upload dist/*
+        uses: pypa/gh-action-pypa-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+
