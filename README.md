@@ -22,6 +22,18 @@
 
 ---
 
+## Complete Theory & Architecture Documentation
+
+For deep technical specifications, design theory, mathematical formulas, and protocol specs, read the documentation suite in `docs/`:
+
+- 📘 [Architecture & Distributed VCS Theory](file:///c:/Users/amita/myprojects/mygit/docs/architecture.md) — Content Addressing (CAS), Commit DAG theory, Immutability model.
+- 📙 [Repository & Object Format Specification](file:///c:/Users/amita/myprojects/mygit/docs/repository-format.md) — Binary envelope layout, SHA-256 calculation, Tree/Commit schemas.
+- 📗 [Merge & Diff Engine Specification](file:///c:/Users/amita/myprojects/mygit/docs/merge-engine.md) — Lowest Common Ancestor (LCA) graph search, 3-way merge decision matrix, conflict markers.
+- 📕 [MyGit Remote Wire Protocol (v1)](file:///c:/Users/amita/myprojects/mygit/docs/protocol.md) — Ref discovery, object negotiation, push/fetch protocol.
+- 🔒 [Security Subsystem & Cryptography Specification](file:///c:/Users/amita/myprojects/mygit/docs/security.md) — Ed25519 Curve25519 signing formulas, Shannon entropy secret detection.
+
+---
+
 ## Installation
 
 ### 1. From PyPI (Standard Installation)
